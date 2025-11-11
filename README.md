@@ -115,10 +115,29 @@ if (result.length === 0) {
 }
 ```
 
-At the tRPC boundary, map Effect errors to thrown TRPCErrors:
+At the tRPC boundary, use the `run` helper to automatically handle errors:
 
 ```typescript
-export async function runEffectInTRPC(runtime, effect) {
+export const todoRouter = router({
+  create: publicProcedure
+    .input(z.object({ title: z.string() }))
+    .mutation(
+      run(function* ({ input }) {
+        const todoService = yield* TodoService
+        return yield* todoService.create(input)
+      })
+    )
+})
+```
+
+The `run` helper:
+- Extracts `runtime` from context automatically
+- Wraps your generator with `Effect.gen`
+- Maps Effect errors to TRPCErrors via `withErrorHandling`
+- Logs unexpected errors for debugging
+
+```typescript
+export async function withErrorHandling(runtime, effect) {
   const exit = await Runtime.runPromiseExit(runtime)(effect)
   
   if (exit._tag === 'Success') return exit.value
@@ -128,6 +147,12 @@ export async function runEffectInTRPC(runtime, effect) {
     throw new TRPCError({ code: 'NOT_FOUND', message: ... })
   }
   // ... other error types
+  
+  // Unexpected errors are logged
+  await Runtime.runPromise(runtime)(
+    Effect.logError('Unexpected error', { cause: Cause.pretty(exit.cause) })
+  )
+  throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', ... })
 }
 ```
 
