@@ -1,7 +1,6 @@
-import { Effect } from 'effect';
 import { z } from 'zod';
 import { TodoService } from '../services/TodoService.js';
-import { publicProcedure, router, runEffect } from './trpc.js';
+import { publicProcedure, router, run } from './trpc.js';
 
 export const todoRouter = router({
   create: publicProcedure
@@ -12,44 +11,32 @@ export const todoRouter = router({
         description: z.string().optional(),
       }),
     )
-    .mutation(({ input, ctx }) =>
-      runEffect(
-        Effect.gen(function* () {
-          const todoService = yield* TodoService;
-          return yield* todoService.create(input);
-        }),
-        ctx.runtime,
-      ),
+    .mutation(
+      run(function* ({ input }) {
+        const todoService = yield* TodoService;
+        return yield* todoService.create(input);
+      }),
     ),
 
-  getAll: publicProcedure.query(({ ctx }) =>
-    runEffect(
-      Effect.gen(function* () {
-        const todoService = yield* TodoService;
-        return yield* todoService.getAll();
-      }),
-      ctx.runtime,
-    ),
+  getAll: publicProcedure.query(
+    run(function* () {
+      const todoService = yield* TodoService;
+      return yield* todoService.getAll();
+    }),
   ),
 
-  getByProjectId: publicProcedure.input(z.number()).query(({ input, ctx }) =>
-    runEffect(
-      Effect.gen(function* () {
-        const todoService = yield* TodoService;
-        return yield* todoService.getByProjectId(input);
-      }),
-      ctx.runtime,
-    ),
+  getByProjectId: publicProcedure.input(z.number()).query(
+    run(function* ({ input }) {
+      const todoService = yield* TodoService;
+      return yield* todoService.getByProjectId(input);
+    }),
   ),
 
-  getById: publicProcedure.input(z.number()).query(({ input, ctx }) =>
-    runEffect(
-      Effect.gen(function* () {
-        const todoService = yield* TodoService;
-        return yield* todoService.getById(input);
-      }),
-      ctx.runtime,
-    ),
+  getById: publicProcedure.input(z.number()).query(
+    run(function* ({ input }) {
+      const todoService = yield* TodoService;
+      return yield* todoService.getById(input);
+    }),
   ),
 
   update: publicProcedure
@@ -63,33 +50,24 @@ export const todoRouter = router({
         }),
       }),
     )
-    .mutation(({ input, ctx }) =>
-      runEffect(
-        Effect.gen(function* () {
-          const todoService = yield* TodoService;
-          return yield* todoService.update(input.id, input.data);
-        }),
-        ctx.runtime,
-      ),
+    .mutation(
+      run(function* ({ input }) {
+        const todoService = yield* TodoService;
+        return yield* todoService.update(input.id, input.data);
+      }),
     ),
 
-  delete: publicProcedure.input(z.number()).mutation(({ input, ctx }) =>
-    runEffect(
-      Effect.gen(function* () {
-        const todoService = yield* TodoService;
-        return yield* todoService.delete(input);
-      }),
-      ctx.runtime,
-    ),
+  delete: publicProcedure.input(z.number()).mutation(
+    run(function* ({ input }) {
+      const todoService = yield* TodoService;
+      return yield* todoService.delete(input);
+    }),
   ),
 
-  toggle: publicProcedure.input(z.number()).mutation(({ input, ctx }) =>
-    runEffect(
-      Effect.gen(function* () {
-        const todoService = yield* TodoService;
-        return yield* todoService.toggle(input);
-      }),
-      ctx.runtime,
-    ),
+  toggle: publicProcedure.input(z.number()).mutation(
+    run(function* ({ input }) {
+      const todoService = yield* TodoService;
+      return yield* todoService.toggle(input);
+    }),
   ),
 });

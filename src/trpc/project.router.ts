@@ -1,7 +1,6 @@
-import { Effect } from 'effect';
 import { z } from 'zod';
 import { ProjectService } from '../services/ProjectService.js';
-import { publicProcedure, router, runEffect } from './trpc.js';
+import { publicProcedure, router, run } from './trpc.js';
 
 export const projectRouter = router({
   create: publicProcedure
@@ -11,14 +10,11 @@ export const projectRouter = router({
         description: z.string().optional(),
       }),
     )
-    .mutation(({ input, ctx }) =>
-      runEffect(
-        Effect.gen(function* () {
-          const projectService = yield* ProjectService;
-          return yield* projectService.create(input);
-        }),
-        ctx.runtime,
-      ),
+    .mutation(
+      run(function* ({ input }) {
+        const projectService = yield* ProjectService;
+        return yield* projectService.create(input);
+      }),
     ),
 
   createWithTodos: publicProcedure
@@ -34,44 +30,32 @@ export const projectRouter = router({
         ),
       }),
     )
-    .mutation(({ input, ctx }) =>
-      runEffect(
-        Effect.gen(function* () {
-          const projectService = yield* ProjectService;
-          return yield* projectService.createWithTodos(input);
-        }),
-        ctx.runtime,
-      ),
+    .mutation(
+      run(function* ({ input }) {
+        const projectService = yield* ProjectService;
+        return yield* projectService.createWithTodos(input);
+      }),
     ),
 
-  getAll: publicProcedure.query(({ ctx }) =>
-    runEffect(
-      Effect.gen(function* () {
-        const projectService = yield* ProjectService;
-        return yield* projectService.getAll();
-      }),
-      ctx.runtime,
-    ),
+  getAll: publicProcedure.query(
+    run(function* () {
+      const projectService = yield* ProjectService;
+      return yield* projectService.getAll();
+    }),
   ),
 
-  getById: publicProcedure.input(z.number()).query(({ input, ctx }) =>
-    runEffect(
-      Effect.gen(function* () {
-        const projectService = yield* ProjectService;
-        return yield* projectService.getById(input);
-      }),
-      ctx.runtime,
-    ),
+  getById: publicProcedure.input(z.number()).query(
+    run(function* ({ input }) {
+      const projectService = yield* ProjectService;
+      return yield* projectService.getById(input);
+    }),
   ),
 
-  getWithTodos: publicProcedure.input(z.number()).query(({ input, ctx }) =>
-    runEffect(
-      Effect.gen(function* () {
-        const projectService = yield* ProjectService;
-        return yield* projectService.getWithTodos(input);
-      }),
-      ctx.runtime,
-    ),
+  getWithTodos: publicProcedure.input(z.number()).query(
+    run(function* ({ input }) {
+      const projectService = yield* ProjectService;
+      return yield* projectService.getWithTodos(input);
+    }),
   ),
 
   update: publicProcedure
@@ -84,23 +68,17 @@ export const projectRouter = router({
         }),
       }),
     )
-    .mutation(({ input, ctx }) =>
-      runEffect(
-        Effect.gen(function* () {
-          const projectService = yield* ProjectService;
-          return yield* projectService.update(input.id, input.data);
-        }),
-        ctx.runtime,
-      ),
+    .mutation(
+      run(function* ({ input }) {
+        const projectService = yield* ProjectService;
+        return yield* projectService.update(input.id, input.data);
+      }),
     ),
 
-  delete: publicProcedure.input(z.number()).mutation(({ input, ctx }) =>
-    runEffect(
-      Effect.gen(function* () {
-        const projectService = yield* ProjectService;
-        return yield* projectService.delete(input);
-      }),
-      ctx.runtime,
-    ),
+  delete: publicProcedure.input(z.number()).mutation(
+    run(function* ({ input }) {
+      const projectService = yield* ProjectService;
+      return yield* projectService.delete(input);
+    }),
   ),
 });

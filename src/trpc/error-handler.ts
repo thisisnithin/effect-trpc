@@ -31,7 +31,7 @@ function mapErrorToTRPCCode(error: AppError): TRPC_ERROR_CODE_KEY {
   }
 }
 
-export async function runEffectInTRPC<A, E, R>(
+export async function withErrorHandling<A, E, R>(
   runtime: Runtime.Runtime<R>,
   effect: Effect.Effect<A, E, R>,
 ): Promise<A> {
@@ -61,9 +61,14 @@ export async function runEffectInTRPC<A, E, R>(
     }
   }
 
+  const prettyCause = Cause.pretty(exit.cause);
+  await Runtime.runPromise(runtime)(
+    Effect.logError('Unexpected error in tRPC handler', { cause: prettyCause }),
+  );
+
   throw new TRPCError({
     code: 'INTERNAL_SERVER_ERROR',
     message: 'An unknown error occurred',
-    cause: Cause.pretty(exit.cause),
+    cause: prettyCause,
   });
 }
