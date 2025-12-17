@@ -129,7 +129,9 @@ type RpcMethod<
     RpcPayload = Rpc.PayloadConstructor<CurrentRpc>,
   >(
     opts?: UseMutationOpts<SuccessType, ErrorType, RpcPayload>,
-  ) => UseMutationOptions<SuccessType, ErrorType, RpcPayload>;
+  ) => UseMutationOptions<SuccessType, ErrorType, RpcPayload> & {
+    mutationFn: (payload: RpcPayload) => Promise<SuccessType>;
+  };
   queryKey: <
     CurrentRpc extends Rpc.ExtractTag<Rpcs, RpcTag>,
     RpcPayload extends

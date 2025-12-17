@@ -10,6 +10,8 @@ import { AppRouter } from '@repo/rpc';
 import { Effect, Layer } from 'effect';
 import { ProjectLive } from './handlers/project-handlers';
 import { TodoLive } from './handlers/todo-handlers';
+import { projectsShapeHandler } from './shapes/projects-shape';
+import { todosShapeHandler } from './shapes/todos-shape';
 
 export const HandlersLive = Layer.mergeAll(ProjectLive, TodoLive);
 
@@ -20,6 +22,8 @@ export const ServerLive = Layer.unwrapScoped(
     const router = HttpRouter.empty.pipe(
       HttpRouter.get('/health', Effect.succeed(HttpServerResponse.text('OK'))),
       HttpRouter.post('/rpc', rpcApp),
+      HttpRouter.all('/shape/projects', projectsShapeHandler),
+      HttpRouter.all('/shape/todos', todosShapeHandler),
       HttpMiddleware.cors(),
     );
 
@@ -30,5 +34,5 @@ export const ServerLive = Layer.unwrapScoped(
 export const HttpLive = ServerLive.pipe(
   Layer.provide(HandlersLive),
   Layer.provide(RpcSerialization.layerJson),
-  Layer.provide(BunHttpServer.layer({ port: 3000 })),
+  Layer.provide(BunHttpServer.layer({ port: 3000, idleTimeout: 30 })),
 );

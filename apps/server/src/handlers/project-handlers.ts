@@ -14,35 +14,12 @@ export const ProjectLive = ProjectGroup.toLayer(
         );
       },
 
-      ProjectCreateWithTodos: ({ name, description, todos }) => {
-        return withErrorHandling(
-          Effect.as(
-            projectService.createWithTodos({
-              name,
-              description,
-              todos: [...todos],
-            }),
-            undefined,
-          ),
-        );
-      },
-
       ProjectGetAll: () => {
         return withErrorHandling(projectService.getAll());
       },
 
       ProjectGetById: ({ id }) => {
         return withErrorHandling(projectService.getById(id));
-      },
-
-      ProjectGetWithTodos: ({ id }) => {
-        return withErrorHandling(projectService.getWithTodos(id));
-      },
-
-      ProjectUpdate: ({ id, data }) => {
-        return withErrorHandling(
-          Effect.as(projectService.update(id, data), undefined),
-        );
       },
 
       ProjectDelete: ({ id }) => {

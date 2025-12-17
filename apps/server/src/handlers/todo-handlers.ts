@@ -8,25 +8,21 @@ export const TodoLive = TodoGroup.toLayer(
     const todoService = yield* TodoService;
 
     return TodoGroup.of({
-      TodoCreate: ({ projectId, title, description }) => {
+      TodoCreate: ({ projectId, title, description, status }) => {
         return withErrorHandling(
           Effect.as(
-            todoService.create({ projectId, title, description }),
+            todoService.create({ projectId, title, description, status }),
             undefined,
           ),
         );
-      },
-
-      TodoGetAll: () => {
-        return withErrorHandling(todoService.getAll());
       },
 
       TodoGetByProjectId: ({ projectId }) => {
         return withErrorHandling(todoService.getByProjectId(projectId));
       },
 
-      TodoGetById: ({ id }) => {
-        return withErrorHandling(todoService.getById(id));
+      TodoGetAll: () => {
+        return withErrorHandling(todoService.getAll());
       },
 
       TodoUpdate: ({ id, data }) => {
@@ -37,16 +33,6 @@ export const TodoLive = TodoGroup.toLayer(
 
       TodoDelete: ({ id }) => {
         return withErrorHandling(Effect.as(todoService.delete(id), undefined));
-      },
-
-      TodoToggle: ({ id }) => {
-        return withErrorHandling(Effect.as(todoService.toggle(id), undefined));
-      },
-
-      TodoGetByProjectIdPaginated: ({ projectId, cursor, limit = 10 }) => {
-        return withErrorHandling(
-          todoService.getByProjectIdPaginated(projectId, cursor ?? 0, limit),
-        );
       },
     });
   }),

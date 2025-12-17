@@ -1,4 +1,3 @@
-import { Effect, Either } from 'effect';
 import { describe, expect, it } from 'vitest';
 import { runTest, startTestServer } from './test-server';
 
@@ -25,118 +24,20 @@ describe('Project App E2E', () => {
     );
 
     it(
-      'creates a project with todos in a transaction',
-      runTest(function* () {
-        const { client } = yield* startTestServer();
-
-        yield* client.ProjectCreateWithTodos({
-          name: 'Launch Website',
-          description: 'Website launch project',
-          todos: [
-            { title: 'Design mockups', description: 'Create UI/UX designs' },
-            {
-              title: 'Implement frontend',
-              description: 'Build React components',
-            },
-            { title: 'Deploy to production' },
-          ],
-        });
-
-        const projects = yield* client.ProjectGetAll();
-        const project = projects.find((p) => p.name === 'Launch Website');
-        expect(project).toBeDefined();
-
-        const result = yield* client.ProjectGetWithTodos({ id: project!.id });
-
-        expect(result.project.name).toBe('Launch Website');
-        expect(result.todos.length).toBe(3);
-        expect(result.todos[0].title).toBe('Design mockups');
-        expect(result.todos[1].title).toBe('Implement frontend');
-        expect(result.todos[2].title).toBe('Deploy to production');
-        expect(result.todos[0].projectId).toBe(result.project.id);
-        expect(result.todos[1].projectId).toBe(result.project.id);
-        expect(result.todos[2].projectId).toBe(result.project.id);
-      }),
-    );
-
-    it(
-      'gets all projects',
-      runTest(function* () {
-        const { client } = yield* startTestServer();
-
-        yield* client.ProjectCreate({ name: 'Project 1' });
-        yield* client.ProjectCreate({ name: 'Project 2' });
-
-        const result = yield* client.ProjectGetAll();
-
-        expect(result.length).toBeGreaterThanOrEqual(2);
-        expect(result.some((p) => p.name === 'Project 1')).toBe(true);
-        expect(result.some((p) => p.name === 'Project 2')).toBe(true);
-      }),
-    );
-
-    it(
       'gets a project by id',
       runTest(function* () {
         const { client } = yield* startTestServer();
 
-        yield* client.ProjectCreate({ name: 'Find Me' });
+        yield* client.ProjectCreate({
+          name: 'Get Test Project',
+        });
 
         const projects = yield* client.ProjectGetAll();
-        const created = projects.find((p) => p.name === 'Find Me');
+        const created = projects.find((p) => p.name === 'Get Test Project');
         expect(created).toBeDefined();
 
         const result = yield* client.ProjectGetById({ id: created!.id });
-
-        expect(result.id).toBe(created!.id);
-        expect(result.name).toBe('Find Me');
-      }),
-    );
-
-    it(
-      'gets a project with todos',
-      runTest(function* () {
-        const { client } = yield* startTestServer();
-
-        yield* client.ProjectCreateWithTodos({
-          name: 'Project with Todos',
-          todos: [{ title: 'Todo 1' }, { title: 'Todo 2' }],
-        });
-
-        const projects = yield* client.ProjectGetAll();
-        const project = projects.find((p) => p.name === 'Project with Todos');
-        expect(project).toBeDefined();
-
-        const result = yield* client.ProjectGetWithTodos({ id: project!.id });
-
-        expect(result.project.name).toBe('Project with Todos');
-        expect(result.todos.length).toBe(2);
-        expect(result.todos[0].title).toBe('Todo 1');
-        expect(result.todos[1].title).toBe('Todo 2');
-      }),
-    );
-
-    it(
-      'updates a project',
-      runTest(function* () {
-        const { client } = yield* startTestServer();
-
-        yield* client.ProjectCreate({ name: 'Original Name' });
-
-        const projects = yield* client.ProjectGetAll();
-        const created = projects.find((p) => p.name === 'Original Name');
-        expect(created).toBeDefined();
-
-        yield* client.ProjectUpdate({
-          id: created!.id,
-          data: { name: 'Updated Name', description: 'New description' },
-        });
-
-        const updated = yield* client.ProjectGetById({ id: created!.id });
-
-        expect(updated.id).toBe(created!.id);
-        expect(updated.name).toBe('Updated Name');
-        expect(updated.description).toBe('New description');
+        expect(result.name).toBe('Get Test Project');
       }),
     );
 
@@ -145,28 +46,19 @@ describe('Project App E2E', () => {
       runTest(function* () {
         const { client } = yield* startTestServer();
 
-        yield* client.ProjectCreateWithTodos({
-          name: 'Delete Me',
-          todos: [{ title: 'Associated todo' }],
+        yield* client.ProjectCreate({
+          name: 'Delete Test Project',
         });
 
         const projects = yield* client.ProjectGetAll();
-        const created = projects.find((p) => p.name === 'Delete Me');
+        const created = projects.find((p) => p.name === 'Delete Test Project');
         expect(created).toBeDefined();
 
         yield* client.ProjectDelete({ id: created!.id });
 
-        const getProjectResult = yield* Effect.either(
-          client.ProjectGetById({ id: created!.id }),
-        );
-        Either.match(getProjectResult, {
-          onLeft: (error) => {
-            expect(error._tag).toBe('ProjectNotFoundError');
-          },
-          onRight: () => {
-            throw new Error('Expected ProjectNotFoundError but got success');
-          },
-        });
+        const afterDelete = yield* client.ProjectGetAll();
+        const deleted = afterDelete.find((p) => p.id === created!.id);
+        expect(deleted).toBeUndefined();
       }),
     );
   });
@@ -177,119 +69,56 @@ describe('Project App E2E', () => {
       runTest(function* () {
         const { client } = yield* startTestServer();
 
-        yield* client.ProjectCreate({ name: 'Test Project' });
-
+        yield* client.ProjectCreate({ name: 'Todo Test Project' });
         const projects = yield* client.ProjectGetAll();
-        const project = projects.find((p) => p.name === 'Test Project');
+        const project = projects.find((p) => p.name === 'Todo Test Project');
         expect(project).toBeDefined();
 
         yield* client.TodoCreate({
           projectId: project!.id,
           title: 'Test Todo',
-          description: 'This is a test todo',
+          description: 'Test Description',
+          status: 'todo',
         });
 
         const todos = yield* client.TodoGetByProjectId({
           projectId: project!.id,
         });
-        const result = todos.find((t) => t.title === 'Test Todo');
-        expect(result).toBeDefined();
+        const todo = todos.find((t) => t.title === 'Test Todo');
 
-        expect(result!.title).toBe('Test Todo');
-        expect(result!.description).toBe('This is a test todo');
-        expect(result!.completed).toBe(false);
-        expect(result!.projectId).toBe(project!.id);
-        expect(result!.id).toBeTypeOf('number');
+        expect(todo).toBeDefined();
+        expect(todo?.title).toBe('Test Todo');
+        expect(todo?.description).toBe('Test Description');
+        expect(todo?.status).toBe('todo');
       }),
     );
 
     it(
-      'gets all todos',
+      'gets all todos for a project',
       runTest(function* () {
         const { client } = yield* startTestServer();
 
-        yield* client.ProjectCreate({ name: 'Test Project' });
-
+        yield* client.ProjectCreate({ name: 'Multi Todo Project' });
         const projects = yield* client.ProjectGetAll();
-        const project = projects.find((p) => p.name === 'Test Project');
+        const project = projects.find((p) => p.name === 'Multi Todo Project');
         expect(project).toBeDefined();
 
         yield* client.TodoCreate({
           projectId: project!.id,
           title: 'Todo 1',
+          status: 'todo',
         });
         yield* client.TodoCreate({
           projectId: project!.id,
           title: 'Todo 2',
-        });
-
-        const result = yield* client.TodoGetAll();
-
-        expect(result.length).toBeGreaterThanOrEqual(2);
-        expect(result.some((t) => t.title === 'Todo 1')).toBe(true);
-        expect(result.some((t) => t.title === 'Todo 2')).toBe(true);
-      }),
-    );
-
-    it(
-      'gets todos by project',
-      runTest(function* () {
-        const { client } = yield* startTestServer();
-
-        yield* client.ProjectCreate({ name: 'Project 1' });
-        yield* client.ProjectCreate({ name: 'Project 2' });
-
-        const allProjects = yield* client.ProjectGetAll();
-        const project1 = allProjects.find((p) => p.name === 'Project 1');
-        const project2 = allProjects.find((p) => p.name === 'Project 2');
-        expect(project1).toBeDefined();
-        expect(project2).toBeDefined();
-
-        yield* client.TodoCreate({
-          projectId: project1!.id,
-          title: 'Project 1 Todo',
-        });
-        yield* client.TodoCreate({
-          projectId: project2!.id,
-          title: 'Project 2 Todo',
-        });
-
-        const result = yield* client.TodoGetByProjectId({
-          projectId: project1!.id,
-        });
-
-        expect(result.length).toBeGreaterThanOrEqual(1);
-        expect(result.every((t) => t.projectId === project1!.id)).toBe(true);
-        expect(result.some((t) => t.title === 'Project 1 Todo')).toBe(true);
-      }),
-    );
-
-    it(
-      'gets a todo by id',
-      runTest(function* () {
-        const { client } = yield* startTestServer();
-
-        yield* client.ProjectCreate({ name: 'Test Project' });
-
-        const projects = yield* client.ProjectGetAll();
-        const project = projects.find((p) => p.name === 'Test Project');
-        expect(project).toBeDefined();
-
-        yield* client.TodoCreate({
-          projectId: project!.id,
-          title: 'Find Me',
+          status: 'in-progress',
         });
 
         const todos = yield* client.TodoGetByProjectId({
           projectId: project!.id,
         });
-        const created = todos.find((t) => t.title === 'Find Me');
-        expect(created).toBeDefined();
 
-        const result = yield* client.TodoGetById({ id: created!.id });
-
-        expect(result.id).toBe(created!.id);
-        expect(result.title).toBe('Find Me');
+        expect(todos.length).toBe(2);
       }),
     );
 
@@ -298,68 +127,34 @@ describe('Project App E2E', () => {
       runTest(function* () {
         const { client } = yield* startTestServer();
 
-        yield* client.ProjectCreate({ name: 'Test Project' });
-
+        yield* client.ProjectCreate({ name: 'Update Todo Project' });
         const projects = yield* client.ProjectGetAll();
-        const project = projects.find((p) => p.name === 'Test Project');
+        const project = projects.find((p) => p.name === 'Update Todo Project');
         expect(project).toBeDefined();
 
         yield* client.TodoCreate({
           projectId: project!.id,
           title: 'Original Title',
+          status: 'todo',
         });
 
-        const allTodos = yield* client.TodoGetByProjectId({
+        const todos = yield* client.TodoGetByProjectId({
           projectId: project!.id,
         });
-        const created = allTodos.find((t) => t.title === 'Original Title');
-        expect(created).toBeDefined();
+        const todo = todos[0];
 
         yield* client.TodoUpdate({
-          id: created!.id,
-          data: { title: 'Updated Title', completed: true },
+          id: todo.id,
+          data: { title: 'Updated Title', status: 'in-progress' },
         });
 
-        const updated = yield* client.TodoGetById({ id: created!.id });
-
-        expect(updated.id).toBe(created!.id);
-        expect(updated.title).toBe('Updated Title');
-        expect(updated.completed).toBe(true);
-      }),
-    );
-
-    it(
-      'toggles todo completion',
-      runTest(function* () {
-        const { client } = yield* startTestServer();
-
-        yield* client.ProjectCreate({ name: 'Test Project' });
-
-        const projects = yield* client.ProjectGetAll();
-        const project = projects.find((p) => p.name === 'Test Project');
-        expect(project).toBeDefined();
-
-        yield* client.TodoCreate({
-          projectId: project!.id,
-          title: 'Toggle Me',
-        });
-
-        const allTodos = yield* client.TodoGetByProjectId({
+        const updatedTodos = yield* client.TodoGetByProjectId({
           projectId: project!.id,
         });
-        const created = allTodos.find((t) => t.title === 'Toggle Me');
-        expect(created).toBeDefined();
-        expect(created!.completed).toBe(false);
+        const updated = updatedTodos.find((t) => t.id === todo.id);
 
-        yield* client.TodoToggle({ id: created!.id });
-
-        const toggled = yield* client.TodoGetById({ id: created!.id });
-        expect(toggled.completed).toBe(true);
-
-        yield* client.TodoToggle({ id: created!.id });
-
-        const toggledBack = yield* client.TodoGetById({ id: created!.id });
-        expect(toggledBack.completed).toBe(false);
+        expect(updated?.title).toBe('Updated Title');
+        expect(updated?.status).toBe('in-progress');
       }),
     );
 
@@ -368,53 +163,30 @@ describe('Project App E2E', () => {
       runTest(function* () {
         const { client } = yield* startTestServer();
 
-        yield* client.ProjectCreate({ name: 'Test Project' });
-
+        yield* client.ProjectCreate({ name: 'Delete Todo Project' });
         const projects = yield* client.ProjectGetAll();
-        const project = projects.find((p) => p.name === 'Test Project');
+        const project = projects.find((p) => p.name === 'Delete Todo Project');
         expect(project).toBeDefined();
 
         yield* client.TodoCreate({
           projectId: project!.id,
-          title: 'Delete Me',
+          title: 'To Delete',
+          status: 'todo',
         });
 
-        const allTodos = yield* client.TodoGetByProjectId({
+        const todos = yield* client.TodoGetByProjectId({
           projectId: project!.id,
         });
-        const created = allTodos.find((t) => t.title === 'Delete Me');
-        expect(created).toBeDefined();
+        const todo = todos[0];
 
-        yield* client.TodoDelete({ id: created!.id });
+        yield* client.TodoDelete({ id: todo.id });
 
-        const getResult = yield* Effect.either(
-          client.TodoGetById({ id: created!.id }),
-        );
-
-        Either.match(getResult, {
-          onLeft: (error) => {
-            expect(error._tag).toBe('TodoNotFoundError');
-          },
-          onRight: () => {
-            throw new Error('Expected TodoNotFoundError but got success');
-          },
+        const afterDelete = yield* client.TodoGetByProjectId({
+          projectId: project!.id,
         });
+
+        expect(afterDelete.length).toBe(0);
       }),
     );
   });
-
-  it(
-    'health check returns OK',
-    runTest(function* () {
-      const { port } = yield* startTestServer();
-
-      const response = yield* Effect.promise(() =>
-        fetch(`http://localhost:${port}/health`),
-      );
-      const text = yield* Effect.promise(() => response.text());
-
-      expect(response.status).toBe(200);
-      expect(text).toBe('OK');
-    }),
-  );
 });

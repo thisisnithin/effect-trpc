@@ -1,5 +1,5 @@
-import { TodoNotFoundError } from '@repo/rpc';
-import { and, eq, gt } from 'drizzle-orm';
+import { TodoNotFoundError, TodoStatus } from '@repo/rpc';
+import { eq } from 'drizzle-orm';
 import { Effect } from 'effect';
 import { Db } from '../db/client';
 import * as schema from '../db/schema';
@@ -12,6 +12,7 @@ export class TodoService extends Effect.Service<TodoService>()('TodoService', {
       projectId: number;
       title: string;
       description?: string;
+      status: TodoStatus;
     }) => {
       return Effect.gen(function* () {
         const now = new Date();
@@ -21,18 +22,13 @@ export class TodoService extends Effect.Service<TodoService>()('TodoService', {
             projectId: input.projectId,
             title: input.title,
             description: input.description,
-            completed: false,
+            status: input.status,
+            order: 0,
             createdAt: now,
             updatedAt: now,
           })
           .returning();
-        return result[0];
-      });
-    };
-
-    const getAll = () => {
-      return Effect.gen(function* () {
-        return yield* db.select().from(schema.todos);
+        return result[0] as unknown as typeof schema.todos.$inferSelect;
       });
     };
 
@@ -45,22 +41,18 @@ export class TodoService extends Effect.Service<TodoService>()('TodoService', {
       });
     };
 
-    const getById = (id: number) => {
-      return Effect.gen(function* () {
-        const result = yield* db
-          .select()
-          .from(schema.todos)
-          .where(eq(schema.todos.id, id));
-        if (result.length === 0) {
-          return yield* Effect.fail(new TodoNotFoundError({ id }));
-        }
-        return result[0];
-      });
+    const getAll = () => {
+      return db.select().from(schema.todos);
     };
 
     const update = (
       id: number,
-      input: { title?: string; description?: string; completed?: boolean },
+      input: {
+        title?: string;
+        description?: string;
+        status?: TodoStatus;
+        order?: number;
+      },
     ) => {
       return Effect.gen(function* () {
         const result = yield* db
@@ -91,61 +83,12 @@ export class TodoService extends Effect.Service<TodoService>()('TodoService', {
       });
     };
 
-    const toggle = (id: number) => {
-      return Effect.gen(function* () {
-        const existing = yield* getById(id);
-        const result = yield* db
-          .update(schema.todos)
-          .set({
-            completed: !existing.completed,
-            updatedAt: new Date(),
-          })
-          .where(eq(schema.todos.id, id))
-          .returning();
-        return result[0];
-      });
-    };
-
-    const getByProjectIdPaginated = (
-      projectId: number,
-      cursor: number,
-      limit: number,
-    ) => {
-      return Effect.gen(function* () {
-        const todos = yield* db
-          .select()
-          .from(schema.todos)
-          .where(
-            cursor > 0
-              ? and(
-                  eq(schema.todos.projectId, projectId),
-                  gt(schema.todos.id, cursor),
-                )
-              : eq(schema.todos.projectId, projectId),
-          )
-          .limit(limit + 1)
-          .orderBy(schema.todos.id);
-
-        const hasMore = todos.length > limit;
-        const items = hasMore ? todos.slice(0, limit) : todos;
-        const nextCursor = hasMore ? items[items.length - 1].id : null;
-
-        return {
-          todos: items,
-          nextCursor,
-        };
-      });
-    };
-
     return {
       create,
-      getAll,
-      getById,
       getByProjectId,
-      getByProjectIdPaginated,
+      getAll,
       update,
       delete: deleteTodo,
-      toggle,
     };
   }),
 }) {}

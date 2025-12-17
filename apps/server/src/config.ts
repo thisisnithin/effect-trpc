@@ -3,7 +3,8 @@ import { Config } from 'effect';
 export enum ConfigEnum {
   LOG_LEVEL = 'LOG_LEVEL',
   NODE_ENV = 'NODE_ENV',
-  DB_PATH = 'DB_PATH',
+  DATABASE_URL = 'DATABASE_URL',
+  ELECTRIC_URL = 'ELECTRIC_URL',
 }
 
 const logLevel = Config.logLevel(ConfigEnum.LOG_LEVEL);
@@ -12,12 +13,17 @@ const nodeEnv = Config.string(ConfigEnum.NODE_ENV).pipe(
   Config.withDefault('development'),
 );
 
-const dbPath = Config.string(ConfigEnum.DB_PATH).pipe(
-  Config.withDefault('./src/db/todo.db'),
+const dbUrl = Config.string(ConfigEnum.DATABASE_URL).pipe(
+  Config.withDefault('postgresql://postgres:postgres@localhost:5432/todos'),
+);
+
+const electricUrl = Config.string(ConfigEnum.ELECTRIC_URL).pipe(
+  Config.withDefault('http://localhost:3002'),
 );
 
 export const AppConfig = Config.all({
   logLevel,
   nodeEnv,
-  dbPath,
+  dbUrl,
+  electricUrl,
 });

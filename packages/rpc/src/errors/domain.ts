@@ -13,3 +13,10 @@ export class ProjectNotFoundError extends S.TaggedError<ProjectNotFoundError>()(
     id: S.Number,
   },
 ) {}
+
+export class ColumnNotFoundError extends S.TaggedError<ColumnNotFoundError>()(
+  'ColumnNotFoundError',
+  {
+    id: S.Number,
+  },
+) {}

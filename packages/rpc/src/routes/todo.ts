@@ -1,6 +1,6 @@
 import { Rpc, RpcGroup } from '@effect/rpc';
 import { Schema as S } from 'effect';
-import { Todo } from '../common';
+import { Todo, TodoStatus } from '../common';
 import { InternalError } from '../errors/base';
 import { TodoNotFoundError } from '../errors/domain';
 
@@ -11,13 +11,9 @@ const TodoCreate = Rpc.make('TodoCreate', {
       S.minLength(1, { message: () => 'Title is required' }),
     ),
     description: S.optional(S.String),
+    status: TodoStatus,
   },
   success: S.Undefined,
-  error: InternalError,
-});
-
-const TodoGetAll = Rpc.make('TodoGetAll', {
-  success: S.Array(Todo),
   error: InternalError,
 });
 
@@ -29,12 +25,10 @@ const TodoGetByProjectId = Rpc.make('TodoGetByProjectId', {
   error: InternalError,
 });
 
-const TodoGetById = Rpc.make('TodoGetById', {
-  payload: {
-    id: S.Number,
-  },
-  success: Todo,
-  error: S.Union(TodoNotFoundError, InternalError),
+const TodoGetAll = Rpc.make('TodoGetAll', {
+  payload: S.Void,
+  success: S.Array(Todo),
+  error: InternalError,
 });
 
 const TodoUpdate = Rpc.make('TodoUpdate', {
@@ -43,7 +37,8 @@ const TodoUpdate = Rpc.make('TodoUpdate', {
     data: S.Struct({
       title: S.optional(S.String.pipe(S.minLength(1))),
       description: S.optional(S.String),
-      completed: S.optional(S.Boolean),
+      status: S.optional(TodoStatus),
+      order: S.optional(S.Number),
     }),
   },
   success: S.Undefined,
@@ -58,34 +53,10 @@ const TodoDelete = Rpc.make('TodoDelete', {
   error: S.Union(TodoNotFoundError, InternalError),
 });
 
-const TodoToggle = Rpc.make('TodoToggle', {
-  payload: {
-    id: S.Number,
-  },
-  success: S.Undefined,
-  error: S.Union(TodoNotFoundError, InternalError),
-});
-
-const TodoGetByProjectIdPaginated = Rpc.make('TodoGetByProjectIdPaginated', {
-  payload: {
-    projectId: S.Number,
-    cursor: S.optional(S.Number),
-    limit: S.optional(S.Number.pipe(S.int(), S.positive())),
-  },
-  success: S.Struct({
-    todos: S.Array(Todo),
-    nextCursor: S.NullOr(S.Number),
-  }),
-  error: InternalError,
-});
-
 export class TodoGroup extends RpcGroup.make(
   TodoCreate,
-  TodoGetAll,
   TodoGetByProjectId,
-  TodoGetByProjectIdPaginated,
-  TodoGetById,
+  TodoGetAll,
   TodoUpdate,
   TodoDelete,
-  TodoToggle,
 ) {}
